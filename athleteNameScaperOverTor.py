@@ -18,6 +18,17 @@ def newIdentity():
         controller.authenticate(password='') # SET PASSWORD HERE!
         controller.signal(Signal.NEWNYM)
 
+# https://stackoverflow.com/questions/46258499
+def getLast():
+    try:
+        with open('all-athlete-names.txt', 'rb') as file:
+            file.seek(-2, os.SEEK_END)
+            while file.read(1) != b'\n':
+                file.seek(-2, os.SEEK_CUR)
+            return int(file.readline().decode().split('.')[0]) + 1
+    except:
+        return 1
+
 async def getAthlete(session, i, trials=0):
     url = "https://www.milesplit.com/athletes/{}".format(i)
     while trials < 12: # 12 trials * 10 sec = 120 max to exit
@@ -46,4 +57,6 @@ async def getAthlete(session, i, trials=0):
 
 async def main():
     connector = ProxyConnector.from_url('socks5://127.0.0.1:9050') # seems to need from_url function
-    # please continue
+    start, end, size, batchCount = getLast(), 16694212, 500, 0
+    accumulatedResults = []
+    async with aiohttp.ClientSession(connector=connector) as session:
