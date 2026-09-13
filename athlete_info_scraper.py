@@ -3,6 +3,7 @@ import aiohttp
 import aiofiles # for dumps
 import json
 import sys
+import os
 
 # all TOR
 from aiohttp import ClientSession
@@ -37,7 +38,7 @@ semaphore = asyncio.Semaphore(300)
 
 async def getAthlete(session, athleteID, retries=10):
     statsLink = "https://www.milesplit.com/api/v1/athletes/{}/stats".format(athleteID)
-    fileOutput = "athlete-{}-stats.json".format(athleteID)
+    fileOutput = "json/athlete-{}-stats.json".format(athleteID)
 
     # maximum time is 100 seconds in case I get unlucky and pull a bunch of slow TOR networks
     async with semaphore:
@@ -73,6 +74,7 @@ async def getAthlete(session, athleteID, retries=10):
 
 # batched setup
 async def main(total, batchSize=1000000, chunkSize=32768, retries=10):
+    os.makedirs("json", exist_ok=True)
     connector = ProxyConnector.from_url(torProxy)
 
     async with ClientSession(connector=connector) as session:

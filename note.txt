@@ -1,0 +1,15 @@
+run as
+
+pip install aiohttp aiofiles aiohttp-socks stem
+apt install python3-aiohttp python3-aiofiles python3-aiohttp-socks python3-stem
+
+run tor --hash-password <password>
+
+edit /etc/tor/torrc
+```
+ControlPort 9051
+SOCKSPort 9050
+HashedControlPassword 16:<hashed password>
+```
+
+python -u athlete_info_scraper.py "<password>" > scraper.log 2>&1
