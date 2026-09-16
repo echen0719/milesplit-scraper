@@ -23,14 +23,14 @@ torPassword = sys.argv[1] # SET PASSWORD HERE!
 
 async def newTORIdentity():
     def renew():
-        try:
-            with Controller.from_port(port=9051) as controller:
-                controller.authenticate(password=torPassword)
-                controller.signal(Signal.NEWNYM)
-        except:
-            print("Tor failed to change identity")
+        with Controller.from_port(port=9051) as controller:
+            controller.authenticate(password=torPassword)
+            controller.signal(Signal.NEWNYM)
 
-    await asyncio.to_thread(renew) # made everything including this async
+    try:
+        await asyncio.to_thread(renew) # made everything including this async
+    except Exception as e:
+        print("Tor failed to change identity because of {}".format(e))
 
 # internet can handle this
 # 300 * ~4KB = 1.2 MB every few seconds
@@ -46,7 +46,7 @@ async def getAthlete(session, athleteID, retries=10):
 
         while trials < retries:
             try:
-                async with session.get(statsLink, timeout=10) as response:
+                async with session.get(statsLink, timeout=5) as response:
                     if response.status == 200:
                         print("[200] for {}".format(statsLink))
                         try:
@@ -63,14 +63,17 @@ async def getAthlete(session, athleteID, retries=10):
                         await newTORIdentity()
                         await asyncio.sleep(10)
                     elif response.status == 404:
-                        return None # athlete non-existent
+                        return # athlete non-existent
                     else:
                         print("[{}]. Something wrong for {}".format(response.status, statsLink))
-                        await asyncio.sleep(180) # let's say all networks were throttled, we wait 3 min
+                        await asyncio.sleep(60) # let's say all networks were throttled, we wait 1 min
             except Exception as e:
                 print("Request failed for {} because of {}".format(statsLink, e))
 
             trials += 1
+
+        print("Failed all {} retries for {}".format(retries, statsLink))
+        return
 
 # batched setup
 async def main(total, batchSize=1000000, chunkSize=32768, retries=10):
@@ -87,4 +90,4 @@ async def main(total, batchSize=1000000, chunkSize=32768, retries=10):
                 await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
-    asyncio.run(main(total=int(1.9*10**7)))
+    asyncio.run(main(total=int(2*10**7)))
