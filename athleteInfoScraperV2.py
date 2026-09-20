@@ -30,13 +30,8 @@ class IDCounter:
             self.current += 1
             return currentID
 
-async def getAthlete(session, athleteID, workerID, retries):
+async def getAthlete(session, athleteID, workerID, fileOutput, retries):
     statsLink = "https://www.milesplit.com/api/v1/athletes/{}/stats".format(athleteID)
-    fileOutput = "json/athlete-{}-stats.json".format(athleteID)
-
-    # since this script may be run multiple times to not overwrite already found athletes
-    if os.path.exists(fileOutput):
-        return "already there"
 
     try:
         async with session.get(statsLink, timeout=10) as response:
@@ -79,10 +74,15 @@ async def worker(workerID, counter, retries):
             proxy = "socks5://worker_{}:{}@127.0.0.1:9050".format(workerID, currentPassword)
             connector = ProxyConnector.from_url(proxy)
 
-            async with ClientSession(connector=connector) as session:
-                result = await getAthlete(session, athleteID, workerID, retries)
+            fileOutput = "json/athlete-{}-stats.json".format(athleteID)
+            # since this script may be run multiple times to not overwrite already found athletes
+            if os.path.exists(fileOutput):
+                break
 
-                if result in ("success", "already there", "skip"):
+            async with ClientSession(connector=connector) as session:
+                result = await getAthlete(session, athleteID, workerID, fileOutput, retries)
+
+                if result in ("success", "skip"):
                     break
 
                 elif result == "rotate the ip":
