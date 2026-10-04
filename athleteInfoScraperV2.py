@@ -14,6 +14,7 @@ from aiohttp_socks import ProxyConnector
 
 torProxy = "socks5://127.0.0.1:9050"
 numWorkers = 50
+rescan = True # need to collect newer data
 
 class IDCounter:
     def __init__(self, start, total):
@@ -30,6 +31,11 @@ class IDCounter:
             self.current += 1
             return currentID
 
+async def didAthleteChange(fileOutput, newCount):
+    async with aiofiles.open(fileOutput, "r", encoding="utf-8") as file:
+        jsonData = json.loads(await file.read())
+        return len(jsonData["data"]) != newCount
+
 async def getAthlete(session, athleteID, workerID, fileOutput, retries):
     statsLink = "https://www.milesplit.com/api/v1/athletes/{}/stats".format(athleteID)
 
@@ -37,9 +43,13 @@ async def getAthlete(session, athleteID, workerID, fileOutput, retries):
         async with session.get(statsLink, timeout=10) as response:
             if response.status == 200:
                 try:
-                    jsonData = json.dumps(await response.json(), indent=4)
-                    async with aiofiles.open(fileOutput, "w", encoding="utf-8") as file:
-                        await file.write(jsonData)
+                    jsonData = await response.json()
+
+                    # first time scan --> always; future scans --> only when JSON "data" array changes
+                    if not os.path.exists(fileOutput) or rescan and await didAthleteChange(fileOutput, len(jsonData["data"])):
+                        async with aiofiles.open(fileOutput, "w", encoding="utf-8") as file:
+                            await file.write(json.dumps(jsonData, indent=4))
+
                     print("[200] for {} by worker {}".format(statsLink, workerID))
                     return "success"
                 except Exception as e:
@@ -70,14 +80,13 @@ async def worker(workerID, counter, retries):
             break # no more
 
         for trial in range(retries):
+            fileOutput = "json/athlete-{}-stats.json".format(athleteID)
+            if not rescan and os.path.exists(fileOutput):
+                break
+
             # build new socket for each worker instead of sharing
             proxy = "socks5://worker_{}:{}@127.0.0.1:9050".format(workerID, currentPassword)
             connector = ProxyConnector.from_url(proxy)
-
-            fileOutput = "json/athlete-{}-stats.json".format(athleteID)
-            # since this script may be run multiple times to not overwrite already found athletes
-            if os.path.exists(fileOutput):
-                break
 
             async with ClientSession(connector=connector) as session:
                 result = await getAthlete(session, athleteID, workerID, fileOutput, retries)
@@ -111,7 +120,7 @@ async def main(start, total, retries=10):
     print("Everything done!!")
 
 if __name__ == "__main__":
-    asyncio.run(main(start=1, total=int(2*10**7)))
+    asyncio.run(main(start=1, total=int(2e7)))
 
 '''
 So basically,
