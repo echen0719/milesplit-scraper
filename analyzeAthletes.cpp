@@ -1,8 +1,12 @@
 #include <iostream>
 #include <filesystem>
 #include <string_view>
+#include <thread>
 #include <chrono>
 #include <exception>
+#include <vector>
+#include <queue>
+#include <mutex>
 
 // fastest JSON parser ever?
 #include "simdjson.h"
@@ -18,8 +22,20 @@ void parseJSON(simdjson::dom::parser& parser, const std::filesystem::path& fileP
 }
 
 int main() {
+    /* TIL: you have to be careful in the order you define variables
+        after I realized threading and simdjson problems */
+
     std::filesystem::path path = "json/";
-    simdjson::dom::parser parser; // creating this for every file takes effort
+    std::mutex mutex;
+    std::queue<std::filesystem::path> files; // should only take <4G in memory for 17M
+
+    // my cpu should create 20 workers
+    int numThreads = std::thread::hardware_concurrency();
+    if (numThreads == 0) {numThreads = 1;}
+
+    std::vector<std::jthread> workers;
+    workers.reserve(numThreads);
+    std::cout << "Using " << numThreads << " threads" << std::endl;
 
     try {
         int count = 0;
@@ -29,22 +45,53 @@ int main() {
             for (const auto& file : std::filesystem::directory_iterator(path)) {
                 std::filesystem::path filePath = file.path();
                 if (filePath.extension() == ".json") { // check if has json extension
+                    files.push(filePath);
                     count++;
-                    parseJSON(parser, filePath);
                 }
                 else {
                     std::cout << filePath << " is not a JSON file" << std::endl;
                 }
 
                 if (count % 100000 == 0) {
-                    std::cout << "Processed " << count << " files" << std::endl;
+                    std::cout << "Queued " << count << " files" << std::endl;
                     auto now = std::chrono::steady_clock::now();
                     std::cout << "Took " << std::chrono::duration<double>(now - start).count() << " seconds" << std::endl;
                 }
             }
 
             std::cout << "Total number of files: " << count;
+
+            for (int i = 0; i < numThreads; i++) {
+                workers.emplace_back([&files, &mutex]() {
+                    simdjson::dom::parser parser; // each worker has its own
+                    std::filesystem::path filePath;
+
+                    while (true) {
+                        {
+                            // according to what I read, this prevents one worker accidentally popping an empty vector
+                            std::lock_guard<std::mutex> lock(mutex);
+
+                            if (files.empty()) {
+                                break;
+                            }
+
+                            filePath = files.front();
+                            files.pop();
+                        }
+
+                        try { // worker threads need try-catch block
+                            parseJSON(parser, filePath);
+                        }
+                        catch (const std::exception& e) {
+                            std::cout << "Error file: " << filePath << std::endl;
+                            std::cerr << "JSON (simdjson) error because of " << e.what() << std::endl;
+                        }
+                    }
+
+                });
+            }
         }
+
         else {
             std::cerr << "Directory does not exist" << std::endl;
         }
