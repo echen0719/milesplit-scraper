@@ -25,7 +25,7 @@ int main() {
     /* TIL: you have to be careful in the order you define variables
         after I realized threading and simdjson problems */
 
-    std::filesystem::path path = "json/";
+    std::filesystem::path path = "../scraper/json/";
     std::mutex mutex;
     std::queue<std::filesystem::path> files; // should only take <4G in memory for 17M
 
