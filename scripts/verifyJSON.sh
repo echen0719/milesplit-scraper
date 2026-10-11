@@ -28,7 +28,7 @@ done
 
 if [ -z "$directory" ] || [ -z "$batchSize" ]; then
     echo "Need to fill out the directory and batch size..."
-    exit 0
+    exit 1
 fi
 
 echo "Invalid JSON files (will print file names): "
