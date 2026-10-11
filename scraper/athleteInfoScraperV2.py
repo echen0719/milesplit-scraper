@@ -80,7 +80,7 @@ async def worker(workerID, counter, retries):
             break # no more
 
         for trial in range(retries):
-            fileOutput = "json/athlete-{}-stats.json".format(athleteID)
+            fileOutput = "../data/raw/athlete-{}-stats.json".format(athleteID)
             if not rescan and os.path.exists(fileOutput):
                 break
 
@@ -107,7 +107,7 @@ async def worker(workerID, counter, retries):
 
 # worker-styled setup
 async def main(start, total, retries=10):
-    os.makedirs("json", exist_ok=True)
+    os.makedirs("../data/raw", exist_ok=True)
     counter = IDCounter(start, total)
 
     print("Starting for athletes from range {} to {}".format(start, total))

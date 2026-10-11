@@ -19,7 +19,7 @@ public class analyzeAthletes {
     }
 
     public static void main(String[] args) {
-        File dir = new File("scraper/json/");
+        File dir = new File("data/raw/");
         ObjectMapper parser = new ObjectMapper();
 
         int numThreads = Runtime.getRuntime().availableProcessors();
