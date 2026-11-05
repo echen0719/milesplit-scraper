@@ -1,2 +1,4 @@
 data/raw/*
 target/*
+data/parquet/*
+data/*.duckdb
