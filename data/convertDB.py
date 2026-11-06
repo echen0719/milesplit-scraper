@@ -1,6 +1,10 @@
 import os
+import sys
 import psutil
 import duckdb
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from schema import columns, tableName
 
 athletesSource = "raw/athletes"
 athletesParquet = "parquet/athletes"
@@ -35,24 +39,24 @@ def createDB(source, parquet, batchSize):
         con.execute("""
             COPY (
                 SELECT
-                    _embedded.athlete.id AS athlete_id,
-                    _embedded.athlete.firstName AS first_name,
-                    _embedded.athlete.lastName AS last_name,
-                    _embedded.athlete.gender as gender,
-                    _embedded.athlete.schoolId as school_id,
-                    _embedded.athlete.gradYear AS grad_year,
-                    _embedded.athlete.collegeYear AS college_year,
-                    _embedded.athlete.collegeId AS college_id,
-                    _embedded.athlete.city AS city,
-                    _embedded.athlete.state AS state,
-                    _embedded.athlete.teamId AS team_id,
-                    race.id AS event_id,
-                    race.meetId AS meet_id,
-                    race.meetName AS meet_name,
-                    race.eventCode AS event_code,
-                    race.round AS event_round,
-                    race.season AS event_season,
-                    race.mark AS event_mark
+                    _embedded.athlete.id AS {ATHLETE_ID},
+                    _embedded.athlete.firstName AS {FIRST_NAME},
+                    _embedded.athlete.lastName AS {LAST_NAME},
+                    _embedded.athlete.gender AS {GENDER},
+                    _embedded.athlete.schoolId AS {SCHOOL_ID},
+                    _embedded.athlete.gradYear AS {GRAD_YEAR},
+                    _embedded.athlete.collegeYear AS {COLLEGE_YEAR},
+                    _embedded.athlete.collegeId AS {COLLEGE_ID},
+                    _embedded.athlete.city AS {CITY},
+                    _embedded.athlete.state AS {STATE},
+                    _embedded.athlete.teamId AS {TEAM_ID},
+                    race.id AS {EVENT_ID},
+                    race.meetId AS {MEET_ID},
+                    race.meetName AS {MEET_NAME},
+                    race.eventCode AS {EVENT_CODE},
+                    race.round AS {EVENT_ROUND},
+                    race.season AS {EVENT_SEASON},
+                    race.mark AS {EVENT_MARK}
                 FROM (
                     SELECT
                         _embedded,
@@ -60,14 +64,14 @@ def createDB(source, parquet, batchSize):
                     FROM read_json_auto(?, ignore_errors=true)
                 )
             ) TO '{}/data_{}.parquet' (FORMAT PARQUET, COMPRESSION ZSTD)
-        """.format(parquet, i), [batch]) # execute on batched
+        """.format(parquet, i, **columns), [batch]) # execute on batched
 
     print("Converting the Parquets to a DuckDB")
 
     con.execute("""
-        CREATE TABLE athlete_events AS
+        CREATE TABLE {} AS
         SELECT * FROM read_parquet('{}/data*.parquet')
-    """.format(parquet))
+    """.format(tableName, parquet))
 
     print("Created a database at: {}".format(dbName))
     con.close()

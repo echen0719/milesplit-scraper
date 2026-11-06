@@ -2,3 +2,4 @@ data/raw/*
 target/*
 data/parquet/*
 data/*.duckdb
+__pycache__/*

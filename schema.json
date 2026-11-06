@@ -1,0 +1,23 @@
+{
+  "table_name": "athlete_events",
+  "columns": {
+    "ATHLETE_ID": "athlete_id",
+    "FIRST_NAME": "first_name",
+    "LAST_NAME": "last_name",
+    "GENDER": "gender",
+    "SCHOOL_ID": "school_id",
+    "GRAD_YEAR": "grad_year",
+    "COLLEGE_YEAR": "college_year",
+    "COLLEGE_ID": "college_id",
+    "CITY": "city",
+    "STATE": "state",
+    "TEAM_ID": "team_id",
+    "EVENT_ID": "event_id",
+    "MEET_ID": "meet_id",
+    "MEET_NAME": "meet_name",
+    "EVENT_CODE": "event_code",
+    "EVENT_ROUND": "event_round",
+    "EVENT_SEASON": "event_season",
+    "EVENT_MARK": "event_mark"
+  }
+}
