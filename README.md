@@ -10,11 +10,13 @@ The goals of this project is to primarily to build dataset of athletic from [Mil
 milesplit-scraper/
 ├── analysis/       # processing and analysis
 ├── archive/        # older/unused files
+├── data/           # actual data/DBs
 ├── ml/             # machine learning + models
 ├── scraper/        # data collection
 ├── scripts/        # general util scripts
 ├── statistics/     # statistical analysis
 ...
+└── schema.json     # declarative file of DBs
 └── README.md
 ```
 
@@ -30,8 +32,32 @@ More dates will be added as the dataset is expanded.
 
 This contains indivdual athlete data from [/api/v1/athletes](https://www.milesplit.com/api/v1/athletes/)
 
-Athlete count: ```16919710```
-- more statistics to come
+Total athlete count: ```16919708```
+
+1. Most popular first names:
+    - Michael (83992)
+    - Jacob (83754)
+    - Alex (83111)
+    - Ryan (77204)
+    - Andrew (75653)
+2. Most popular surnames:
+    - Smith (126318)
+    - Johnson (110392)
+    - Williams (96373)
+    - Jones (80456)
+    - Brown, 79929
+3. Most popular events:
+    - 5000m (26899014)
+    - 100m (16483226)
+    - 200m (15360708)
+    - Shot Put (12747532)
+    - 400m (11527560)
+4. Most popular states (US only):
+    - Texas (1305686)
+    - California (1207468)
+    - Florida (655280)
+    - Ohio (650043)
+    - New York (609828)
 
 Analysis will include:
 - Participation/number of races
