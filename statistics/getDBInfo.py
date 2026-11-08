@@ -28,7 +28,7 @@ for column in columns:
 sample = con.execute("SELECT * FROM {} ORDER BY RANDOM() LIMIT 100".format(tableName)).fetchdf()
 print("\n", sample.to_string(index=False))
 
-# Shape of the database: (189559933, 18)
+# Shape of the database: (189559933, 21)
 #
 # Column: athlete_id      |        Type: VARCHAR  |        Number of distinct values: 14892438
 # Column: first_name      |        Type: VARCHAR  |        Number of distinct values: 676869
@@ -38,11 +38,14 @@ print("\n", sample.to_string(index=False))
 # Column: grad_year       |        Type: VARCHAR  |        Number of distinct values: 329
 # Column: college_year    |        Type: VARCHAR  |        Number of distinct values: 46
 # Column: college_id      |        Type: VARCHAR  |        Number of distinct values: 6006
+# Column: birth_year      |        Type: VARCHAR  |        Number of distinct values: 259
 # Column: city    |        Type: VARCHAR  |        Number of distinct values: 15686
 # Column: state   |        Type: VARCHAR  |        Number of distinct values: 233
+# Column: country         |        Type: VARCHAR  |        Number of distinct values: 257
 # Column: team_id         |        Type: VARCHAR  |        Number of distinct values: 57116
 # Column: event_id        |        Type: BIGINT   |        Number of distinct values: 189368082
 # Column: meet_id         |        Type: VARCHAR  |        Number of distinct values: 520644
+# Column: event_units     |        Type: VARCHAR  |        Number of distinct values: 782096
 # Column: meet_name       |        Type: VARCHAR  |        Number of distinct values: 280094
 # Column: event_code      |        Type: VARCHAR  |        Number of distinct values: 257
 # Column: event_round     |        Type: VARCHAR  |        Number of distinct values: 6
