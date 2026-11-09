@@ -15,6 +15,14 @@ if len(sys.argv) < 2:
 dbFile = sys.argv[1]
 con = duckdb.connect(dbFile)
 
+# 755.36 * 1000.0 # WR 5K
+# 5 hours
+
+runEvent = "1600m"
+plausibleMinTime = 220.5 * 1000.0 # WR ~1600m
+plausibleMaxTime = 5400 * 1000.0 # 90 minutes
+# all these in ms
+
 def parseTime(time):
     parts = time.strip().strip('"').split(":")
 
@@ -29,7 +37,7 @@ def parseTime(time):
 
 def checkUnits(tolerance=200): # 0.2 second tolerance
     query = "SELECT {}, {} FROM {} WHERE {} = ?".format(columns["EVENT_MARK"], columns["EVENT_UNITS"], tableName, columns["EVENT_CODE"])
-    results = con.execute(query, ["5000m"]).fetchall()
+    results = con.execute(query, [runEvent]).fetchall()
 
     matched = 0
     checked = 0
@@ -41,15 +49,12 @@ def checkUnits(tolerance=200): # 0.2 second tolerance
             matched += 1
         checked += 1
 
-    print("Units to marks matching percentage for the 5K: {:.2f}% meaning {} \"invalid times\" out of {}".format(matched / checked * 100, checked - matched, checked))
+    print("Units to marks matches for the {}: {:.2f}% meaning {} \"invalid times\" out of {}".format(runEvent, matched / checked * 100, checked - matched, checked))
 
 # units are measured in milliseconds for running events
 def analyze(gender, results):
     validResults = []
     excludedResults = []
-
-    plausibleMinTime = 755.36 * 1000.0 # WR 5K
-    plausibleMaxTime = 18000 * 1000.0 # 5 hours
 
     for athleteID, units in results:
         mseconds = float(units)
@@ -69,7 +74,7 @@ def analyze(gender, results):
     std = np.std(plausibleTimes)
     normal = NormalDist(mu=float(mean), sigma=float(std))
 
-    print("\nTotal results for the {}:".format(gender), len(plausibleTimes))
+    print("\nTotal results for the {} in the {}: {}".format(gender, runEvent, len(plausibleTimes)))
     print("Excluded as outliers:", len(excludedResults))
 
     print("\nFastest 10 athletes: ")
@@ -87,10 +92,12 @@ def analyze(gender, results):
     print("Q3: {:.2f} seconds".format(q3))
 
 query = "SELECT {}, {} FROM {} WHERE {} = ? AND {} = ?".format(columns["ATHLETE_ID"], columns["EVENT_UNITS"], tableName, columns["GENDER"], columns["EVENT_CODE"])
-male5Kresults = con.execute(query, ["M", "5000m"]).fetchall()
-female5Kresults = con.execute(query, ["F", "5000m"]).fetchall()
+boysRaceResults = con.execute(query, ["M", runEvent]).fetchall()
+girlsRaceResults = con.execute(query, ["F", runEvent]).fetchall()
 
-# checkUnits() # Units to marks matching percentage for the 5K: 99.98% meaning 4952 "invalid times" out of 26899014
-analyze("boys", male5Kresults)
+# checkUnits()
+# 1600m: 100.00% meaning 106 "invalid times" out of 9326213
+# 5K: 99.98% meaning 4952 "invalid times" out of 26899014
+analyze("boys", boysRaceResults)
 print("\n========================")
-analyze("girls", female5Kresults)
+analyze("girls", girlsRaceResults)
