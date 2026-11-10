@@ -30,16 +30,37 @@ plausibleTimes = {
 
 def parseTime(time):
     if time is None: return None
-    parts = time.strip().strip('"').split(":")
+    mark = time.strip().strip('"')
 
-    if len(parts) == 1: # ss.ff
-        return float(parts[0])
-    if len(parts) == 2: # mm:ss.ff
-        minutes, seconds = parts
-        return (int(minutes) * 60) + float(seconds)
-    elif len(parts) == 3: # hh:mm:ss.ff
-        hours, minutes, seconds = parts
-        return (int(hours) * 3600) + (int(minutes) * 60) + float(seconds)
+    if ":" in mark:
+        parts = mark.split(":")
+
+        if len(parts) == 2: # mm:ss.ff
+            minutes, seconds = parts
+            minutes = int(minutes)
+            seconds = float(seconds)
+
+            if minutes < 0 or not 0 <= seconds <= 60:
+                return None
+            return minutes * 60 + seconds
+
+        elif len(parts) == 3: # hh:mm:ss.ff
+            hours, minutes, seconds = parts
+            hours = int(hours)
+            minutes = int(minutes)
+            seconds = float(seconds)
+
+            if hours < 0 or minutes < 0 or not 0 <= minutes < 60 or not 0 <= seconds <= 60:
+                return None
+            return hours * 3600 + minutes * 60 + seconds
+
+    elif mark.count(".") == 1:
+        seconds = float(mark)
+
+        if seconds < 0:
+            return None
+        return seconds
+
     else:
         return None # that's for null values
 
@@ -52,7 +73,8 @@ def checkUnits(tolerance=50): # 0.05 second tolerance
 
     for athleteID, mark, units in results:
         parsedTime = parseTime(mark)
-        expectedUnits = parseTime(mark) * 1000
+        if not parsedTime is None:
+            expectedUnits = parsedTime * 1000
 
         if expectedUnits - tolerance <= float(units) <= expectedUnits + tolerance:
             matched += 1
@@ -112,13 +134,13 @@ for runEvent in runEvents:
     boysRaceResults = con.execute(query, ["M", runEvent]).fetchall()
     girlsRaceResults = con.execute(query, ["F", runEvent]).fetchall()
 
-    # checkUnits()
-    # 1600m: 100.00% meaning 21 "implausible times" out of 9326213
+    checkUnits()
     # 5000m: 99.98% meaning 4798 "implausible times" out of 26899014
+    # 1600m: 100.00% meaning 21 "implausible times" out of 9326213
 
-    print("\n=======Event: {}=======".format(runEvent))
-
-    print("\n--------------Boys--------------")
-    analyzeTotal("boys", boysRaceResults, runEvent)
-    print("\n--------------Girls--------------")
-    analyzeTotal("girls", girlsRaceResults, runEvent)
+    # print("\n=======Event: {}=======".format(runEvent))
+    #
+    # print("\n--------------Boys--------------")
+    # analyzeTotal("boys", boysRaceResults, runEvent)
+    # print("\n--------------Girls--------------")
+    # analyzeTotal("girls", girlsRaceResults, runEvent)
