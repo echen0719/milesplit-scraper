@@ -14,7 +14,6 @@ from aiohttp_socks import ProxyConnector
 
 torProxy = "socks5://127.0.0.1:9050"
 numWorkers = 50
-rescan = True # need to collect newer data
 
 class IDCounter:
     def __init__(self, start, total):
@@ -31,11 +30,6 @@ class IDCounter:
             self.current += 1
             return currentID
 
-async def didAthleteChange(fileOutput, newCount):
-    async with aiofiles.open(fileOutput, "r", encoding="utf-8") as file:
-        jsonData = json.loads(await file.read())
-        return len(jsonData["data"]) != newCount
-
 async def getAthlete(session, athleteID, workerID, fileOutput, retries):
     statsLink = "https://www.milesplit.com/api/v1/athletes/{}/stats".format(athleteID)
 
@@ -44,11 +38,8 @@ async def getAthlete(session, athleteID, workerID, fileOutput, retries):
             if response.status == 200:
                 try:
                     jsonData = await response.json()
-
-                    # first time scan --> always; future scans --> only when JSON "data" array changes
-                    if not os.path.exists(fileOutput) or rescan and await didAthleteChange(fileOutput, len(jsonData["data"])):
-                        async with aiofiles.open(fileOutput, "w", encoding="utf-8") as file:
-                            await file.write(json.dumps(jsonData, indent=4))
+                    async with aiofiles.open(fileOutput, "w", encoding="utf-8") as file:
+                        await file.write(json.dumps(jsonData, indent=4))
 
                     print("[200] for {} by worker {}".format(statsLink, workerID))
                     return "success"
@@ -81,7 +72,7 @@ async def worker(workerID, counter, retries):
 
         for trial in range(retries):
             fileOutput = "../data/raw/athletes/athlete-{}-stats.json".format(athleteID)
-            if not rescan and os.path.exists(fileOutput):
+            if os.path.exists(fileOutput):
                 break
 
             # build new socket for each worker instead of sharing

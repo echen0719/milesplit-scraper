@@ -14,19 +14,43 @@ if len(sys.argv) < 2:
 dbFile = sys.argv[1]
 con = duckdb.connect(dbFile)
 
-runEvents = ["5000m", "1600m"] # "100m", "200m", "400m", "800m", "3200m", "Mile" in future
+runEvents = ["100m", "200m", "400m", "800m", "1600m", "Mile", "3200m", "5000m"]
 meetExclusions = ["631386", "631387", "632242"] # malformed races
 
 # all these in ms
 plausibleTimes = {
-    "5000m": {
-        "M": {"min": 755.36 * 1000, "max": 18000 * 1000}, # WR 5K, 5 hours
-        "F": {"min": 838.06 * 1000, "max": 18000 * 1000} # WR 5K, 5 hours
+    "100m": { # all based closely on the WR
+        "M": {"min": 9.0 * 1000, "max": 450 * 1000},
+        "F": {"min": 10.0 * 1000, "max": 450 * 1000}
+    },
+    "200m": {
+        "M": {"min": 19.0 * 1000, "max": 450 * 1000},
+        "F": {"min": 20.5 * 1000, "max": 450 * 1000}
+    },
+    "400m": {
+        "M": {"min": 42.0 * 1000, "max": 900 * 1000},
+        "F": {"min": 45.0 * 1000, "max": 900 * 1000}
+    },
+    "800m": {
+        "M": {"min": 97.0 * 1000, "max": 1800 * 1000},
+        "F": {"min": 110.0 * 1000, "max": 1800 * 1000}
     },
     "1600m": {
-        "M": {"min": 221 * 1000, "max": 3600 * 1000}, # WR ~1600m, 1 hour
-        "F": {"min": 244 * 1000, "max": 3600 * 1000}
-    }
+        "M": {"min": 218 * 1000, "max": 3600 * 1000},
+        "F": {"min": 238 * 1000, "max": 3600 * 1000}
+    },
+    "Mile": {
+        "M": {"min": 220 * 1000, "max": 3600 * 1000},
+        "F": {"min": 240 * 1000, "max": 3600 * 1000}
+    },
+    "3200m": {
+        "M": {"min": 465 * 1000, "max": 7200 * 1000},
+        "F": {"min": 525 * 1000, "max": 7200 * 1000}
+    },
+    "5000m": {
+        "M": {"min": 750 * 1000, "max": 18000 * 1000},
+        "F": {"min": 830 * 1000, "max": 18000 * 1000}
+    },
 }
 
 def getExclusionSQL(column):
@@ -158,8 +182,15 @@ def main():
         results = con.execute(query, [runEvent] + meetExclusions).fetchall()
         invalidPerformances = set(checkUnits(results, runEvent))
 
-        # 5000m: 100.00% meaning 949 "invalid times" out of 26884147
+        # 100m: 100.00% meaning 29 "invalid times" out of 16483223
+        # 200m: 100.00% meaning 43 "invalid times" out of 15360702
+        # 400m: 100.00% meaning 490 "invalid times" out of 11527558
+        # 800m: 100.00% meaning 45 "invalid times" out of 11070143
         # 1600m: 100.00% meaning 21 "invalid times" out of 9326212
+        # Mile: 100.00% meaning 8 "invalid times" out of 1289448
+        # 3200m: 100.00% meaning 61 "invalid times" out of 5986805
+        # 5000m: 100.00% meaning 949 "invalid times" out of 26884147
+
         boysRaceResults = []
         girlsRaceResults = []
 
