@@ -12,6 +12,14 @@ import string
 from aiohttp import ClientSession
 from aiohttp_socks import ProxyConnector
 
+if len(sys.argv) < 2:
+    print("Usage: python {} <your JWT token>".format(sys.argv[0]))
+    sys.exit(1)
+
+jwtToken = sys.argv[1]
+headers = {
+    "Cookie": "jwt_token={}".format(jwtToken)
+}
 torProxy = "socks5://127.0.0.1:9050"
 numWorkers = 50
 
@@ -31,28 +39,35 @@ class IDCounter:
             return currentID
 
 async def getMeet(session, meetID, workerID, fileOutput, retries):
-    statsLink = "https://www.milesplit.com/api/v1/meets/{}/stats".format(meetID)
+    statsLink = "https://www.milesplit.com/api/v1/meets/{}/sessions".format(meetID)
 
     try:
-        async with session.get(statsLink, timeout=10) as response:
-            if response.status == 200:
-                try:
-                    jsonData = await response.json()
-                    async with aiofiles.open(fileOutput, "w", encoding="utf-8") as file:
-                        await file.write(json.dumps(jsonData, indent=4))
-
-                    print("[200] for {} by worker {}".format(statsLink, workerID))
-                    return "success"
-                except Exception as e:
-                    print("Received non-JSON response for {} by worker {} (might be blocked)...".format(statsLink, workerID))
-                    return "retry"
-
-            elif response.status == 404:
+        async with session.get(statsLink, headers=headers, timeout=10) as response:
+            if response.status == 404:
                 return "skip" # meet non-existent
 
             elif response.status == 403: # meaning website blocked temporarily
                 print("[403] for {} by worker {}".format(statsLink, workerID))
                 return "rotate the ip"
+
+            elif response.status in (200, 400, 405):
+                try:
+                    jsonData = await response.json() # verify data structure exists
+                    if "_embedded" in jsonData and "meet" in jsonData["_embedded"] and "name" in jsonData["_embedded"]["meet"]:
+                        async with aiofiles.open(fileOutput, "w", encoding="utf-8") as file:
+                            await file.write(json.dumps(jsonData, indent=4))
+
+                        print("Valid info for {} by worker {}".format(statsLink, workerID))
+                        return "success"
+                    else:
+                        return "retry"
+                except Exception as e:
+                    print("Received non-JSON response for {} by worker {} (might be blocked)...".format(statsLink, workerID))
+                    return "retry"
+
+            elif response.status == 401:
+                headers["Cookie"] = "jwt_token={}".format(input("\nYour JWT token expired, enter a new one: "))
+                return "retry"
 
             else:
                 print("[{}]. Something wrong for {} by worker {}".format(response.status, statsLink, workerID))
